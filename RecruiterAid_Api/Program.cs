@@ -5,32 +5,32 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using RecruiterAid_Api.Application.Services;
-using RecruiterAid_Api.Domain.Entities;
 using RecruiterAid_Api.Infrastructure.Data;
-using RecruiterAid_Api.Infrastructure.Data.Seeders;
+using RecruiterAid_Api.Infrastructure.Identity; // IdentitySeeder
+using RecruiterAid_Api.Domain.Entities.Identity; // AppUser
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//  Configure EF Core with SQL Server
+// Configure EF Core with SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-//  Configure Identity
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+// Configure Identity with AppUser
+builder.Services.AddIdentity<AppUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-//  Register application services
+// Register application services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
-//  Add controllers and Swagger
+// Add controllers and Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    //  Enable JWT authentication in Swagger
+    // Enable JWT authentication in Swagger
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -57,7 +57,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-//  Configure JWT authentication
+// Configure JWT authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -83,7 +83,7 @@ builder.Services.AddAuthentication(options =>
         {
             var identity = context.Principal.Identity as ClaimsIdentity;
 
-            var customClaim = identity?.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+            var customClaim = identity?.FindFirst(ClaimTypes.NameIdentifier);
             if (customClaim != null)
             {
                 identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, customClaim.Value));
@@ -99,11 +99,36 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// ✅ Add Authorization Policies
+builder.Services.AddAuthorization(options =>
+{
+    // Admins and Managers can assign candidates
+    options.AddPolicy("CanAssignCandidates", policy =>
+        policy.RequireRole("ADMIN", "MANAGER"));
 
+    // Managers can only access their own team; Admins can access any
+    options.AddPolicy("ManagerOwnTeam", policy =>
+        policy.RequireAssertion(context =>
+        {
+            var user = context.User;
+            if (user.IsInRole("ADMIN"))
+                return true;
 
+            if (user.IsInRole("MANAGER"))
+            {
+                var managerIdClaim = user.FindFirst("ManagerId")?.Value;
+                var routeManagerId = context.Resource as HttpContext
+                    ?? throw new InvalidOperationException("No HttpContext in resource");
 
+                var requestedManagerId = routeManagerId.Request.RouteValues["managerId"]?.ToString();
+                return managerIdClaim != null && managerIdClaim == requestedManagerId;
+            }
 
-//  Optional: Enable CORS for frontend integration
+            return false;
+        }));
+});
+
+// Optional: Enable CORS for frontend integration
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -116,25 +141,30 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-//  Swagger UI for development
+// Swagger UI for development
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-//  Middleware pipeline
+// Middleware pipeline
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-//  Seed roles on startup
+// Seed roles and default users on startup
 using (var scope = app.Services.CreateScope())
 {
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    await RoleSeeder.SeedAsync(roleManager);
+    var services = scope.ServiceProvider;
+    var userManager = services.GetRequiredService<UserManager<AppUser>>();
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+    var dbContext = services.GetRequiredService<ApplicationDbContext>();
+
+    await IdentitySeeder.SeedAsync(userManager, roleManager, dbContext);
 }
+
 
 app.Run();

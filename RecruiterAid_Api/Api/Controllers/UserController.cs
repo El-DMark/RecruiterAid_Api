@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RecruiterAid_Api.Application.Services;
+using RecruiterAid_Api.Presentation.DTOs;
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -17,37 +19,57 @@ namespace RecruiterAid_Api.Api.Controllers
             _userService = userService;
         }
 
-       //[Authorize]
+        /// <summary>
+        /// Get the currently authenticated user's profile.
+        /// </summary>
+        [Authorize]
         [HttpGet("me")]
-        public async Task<IActionResult> GetProfile()
+        public async Task<ActionResult<UserProfileDto>> GetProfile()
         {
-            Console.WriteLine("UserController: /me endpoint hit");
-
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            Console.WriteLine($"Extracted userId: {userId}");
-
             if (string.IsNullOrEmpty(userId))
-            {
-                Console.WriteLine("❌ userId is null or empty");
-                return Unauthorized("Invalid token or missing user ID claim");
-            }
+                return Unauthorized();
 
             var profile = await _userService.GetCurrentUserProfileAsync(userId);
             if (profile == null)
-            {
-                Console.WriteLine("❌ UserService: User not found");
-                return NotFound("User not found");
-            }
+                return NotFound();
 
-            Console.WriteLine($"✅ UserService: Found user {profile.Email}");
             return Ok(profile);
         }
 
+        /// <summary>
+        /// Get all agents reporting to a specific manager.
+        /// Only accessible to Admins and Managers.
+        /// </summary>
+        [Authorize(Policy = "CanAssignCandidates")] // Admins + Managers
+        [HttpGet("{managerId}/agents")]
+        public async Task<ActionResult<IEnumerable<UserProfileDto>>> GetAgentsForManager(string managerId)
+        {
+            var agents = await _userService.GetAgentsForManagerAsync(managerId);
+            return Ok(agents);
+        }
+
+        /// <summary>
+        /// Get a manager and their team of agents.
+        /// Only accessible to Admins and Managers.
+        /// </summary>
+        [Authorize(Policy = "CanAssignCandidates")] // Admins + Managers
+        [HttpGet("{managerId}/team")]
+        public async Task<ActionResult<ManagerTeamDto>> GetManagerTeam(string managerId)
+        {
+            var team = await _userService.GetManagerTeamAsync(managerId);
+            if (team == null)
+                return NotFound();
+
+            return Ok(team);
+        }
 
 
+        /// <summary>
+        /// Simple health check endpoint.
+        /// </summary>
         [HttpGet("ping")]
-        public IActionResult Ping() => Ok("pong");
-
+        public IActionResult Ping() => Ok(new { Message = "pong" });
     }
 }

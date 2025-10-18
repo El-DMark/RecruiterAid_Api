@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using RecruiterAid_Api.Domain.Entities;
+using RecruiterAid_Api.Domain.Entities.Identity;
 using RecruiterAid_Api.Presentation.DTOs;
 using System;
 using System.Collections.Generic;
@@ -14,13 +14,13 @@ namespace RecruiterAid_Api.Application.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly UserManager<AppUser> _userManager;
+        private readonly SignInManager<AppUser> _signInManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IConfiguration _config;
 
-        public AuthService(UserManager<ApplicationUser> userManager,
-                           SignInManager<ApplicationUser> signInManager,
+        public AuthService(UserManager<AppUser> userManager,
+                           SignInManager<AppUser> signInManager,
                            RoleManager<IdentityRole> roleManager,
                            IConfiguration config)
         {
@@ -32,20 +32,20 @@ namespace RecruiterAid_Api.Application.Services
 
         public async Task<bool> RegisterAsync(RegisterRequest request)
         {
-            var user = new ApplicationUser
+            var user = new AppUser
             {
                 UserName = request.Email,
                 Email = request.Email,
-                DisplayName = request.DisplayName,
-                TeamId = request.TeamId
+                FullName = request.FullName,
+                ManagerId = request.ManagerId // optional: only relevant if registering an Agent
             };
 
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded) return false;
 
-            var role = request.Role?.ToUpperInvariant();
-            if (!string.IsNullOrEmpty(role))
+            if (!string.IsNullOrEmpty(request.Role))
             {
+                var role = request.Role;
                 var roleExists = await _roleManager.RoleExistsAsync(role);
                 if (!roleExists) return false;
 
@@ -55,7 +55,8 @@ namespace RecruiterAid_Api.Application.Services
             return true;
         }
 
-        public async Task<string> AuthenticateAsync(LoginRequest request)
+
+        public async Task<string?> AuthenticateAsync(LoginRequest request)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null) return null;
@@ -67,11 +68,20 @@ namespace RecruiterAid_Api.Application.Services
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Name, user.DisplayName ?? user.UserName),
-                new Claim(ClaimTypes.Role, roles.Count > 0 ? roles[0] : "AGENT")
+                // Core identity claims
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+                new Claim(ClaimTypes.NameIdentifier, user.Id), // critical for ManagerOwnTeam policy
+                new Claim(JwtRegisteredClaimNames.Email, user.Email ?? ""),
+                new Claim(ClaimTypes.Name, user.FullName ?? user.UserName ?? ""),
+
+                // Optional: ManagerId claim for policies/handlers
+                new Claim("ManagerId", user.ManagerId ?? string.Empty)
             };
+
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -80,7 +90,7 @@ namespace RecruiterAid_Api.Application.Services
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(1),
+                expires: DateTime.UtcNow.AddHours(2),
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
