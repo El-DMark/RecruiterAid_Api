@@ -6,5 +6,6 @@ namespace RecruiterAid_Api.Presentation.DTOs
     {
         public UserProfileDto Manager { get; set; } = null!;
         public IEnumerable<UserProfileDto> Agents { get; set; } = new List<UserProfileDto>();
+
     }
 }

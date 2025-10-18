@@ -1,4 +1,5 @@
 ﻿using System;
+using RecruiterAid_Api.Domain.Entities.Identity;
 
 namespace RecruiterAid_Api.Domain.Entities.Candidates
 {
@@ -7,14 +8,18 @@ namespace RecruiterAid_Api.Domain.Entities.Candidates
         public long CandidateAgentAssignmentId { get; set; }
 
         public long CandidateId { get; set; }
-        public string AgentUserId { get; set; } = null!; // FK to ApplicationUser (Identity)
+        public Candidate Candidate { get; set; } = null!;
+
+        public string AgentUserId { get; set; } = null!;
+        public AppUser AgentUser { get; set; } = null!;
 
         public DateTime AssignedAt { get; set; }
-        public DateTime? UnassignedAt { get; set; } // null = still active
-        public string? AssignedByUserId { get; set; } // optional: who made the assignment
+        public DateTime? UnassignedAt { get; set; }
 
-        // Navigation
-        public Candidate Candidate { get; set; } = null!;
-        public ApplicationUser AgentUser { get; set; } = null!;
+        public string? AssignedByUserId { get; set; }
+        public AppUser? AssignedByUser { get; set; }
     }
+
+
+
 }

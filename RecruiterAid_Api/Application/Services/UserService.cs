@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using RecruiterAid_Api.Domain.Entities.Identity;
+using RecruiterAid_Api.Infrastructure.Data;
 using RecruiterAid_Api.Presentation.DTOs;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -11,10 +13,13 @@ namespace RecruiterAid_Api.Application.Services
     public class UserService : IUserService
     {
         private readonly UserManager<AppUser> _userManager;
+        private readonly ApplicationDbContext _dbContext;
 
-        public UserService(UserManager<AppUser> userManager)
+
+        public UserService(UserManager<AppUser> userManager, ApplicationDbContext dbContext)
         {
             _userManager = userManager;
+            _dbContext = dbContext;
         }
 
         /// <summary>
@@ -121,6 +126,46 @@ namespace RecruiterAid_Api.Application.Services
                 Manager = managerProfile,
                 Agents = agents
             };
+        }
+       
+        public async Task<IEnumerable<ManagerTeamDto>> GetAllManagerTeamsAsync()
+        {
+            // 1. Get all users in Manager role
+            var managers = await (from user in _dbContext.Users
+                                  join userRole in _dbContext.UserRoles on user.Id equals userRole.UserId
+                                  join role in _dbContext.Roles on userRole.RoleId equals role.Id
+                                  where role.Name == "Manager"
+                                  select user).ToListAsync();
+
+            var result = new List<ManagerTeamDto>();
+
+            foreach (var manager in managers)
+            {
+                // 2. Get agents assigned to this manager
+                var agents = await _dbContext.CandidateAgentAssignments
+                    .Where(ca => ca.AssignedByUserId == manager.Id)
+                    .Select(ca => new UserProfileDto
+                    {
+                        Id = ca.AgentUser.Id,
+                        DisplayName = ca.AgentUser.FullName,
+                        Email = ca.AgentUser.Email
+                    })
+                    .Distinct()
+                    .ToListAsync();
+
+                result.Add(new ManagerTeamDto
+                {
+                    Manager = new UserProfileDto
+                    {
+                        Id = manager.Id,
+                        DisplayName = manager.FullName,
+                        Email = manager.Email
+                    },
+                    Agents = agents
+                });
+            }
+
+            return result;
         }
 
     }

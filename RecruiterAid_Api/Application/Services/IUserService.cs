@@ -29,6 +29,8 @@ namespace RecruiterAid_Api.Application.Services
         Task<UserProfileDto?> GetUserByEmailAsync(string email);
 
         Task<ManagerTeamDto?> GetManagerTeamAsync(string managerId);
+        Task<IEnumerable<ManagerTeamDto>> GetAllManagerTeamsAsync();
+
 
     }
 }

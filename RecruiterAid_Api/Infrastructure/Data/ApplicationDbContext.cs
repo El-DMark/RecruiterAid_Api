@@ -87,6 +87,28 @@ namespace RecruiterAid_Api.Infrastructure.Data
                 .WithOne(f => f.Interview)
                 .HasForeignKey(f => f.InterviewId);
 
+            // ✅ Explicit mapping for CandidateAgentAssignment
+            builder.Entity<CandidateAgentAssignment>(entity =>
+            {
+                entity.HasKey(ca => ca.CandidateAgentAssignmentId);
+
+                entity.HasOne(ca => ca.Candidate)
+                      .WithMany()
+                      .HasForeignKey(ca => ca.CandidateId);
+
+                entity.HasOne(ca => ca.AgentUser)
+                      .WithMany()
+                      .HasForeignKey(ca => ca.AgentUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(ca => ca.AssignedByUser)
+                      .WithMany()
+                      .HasForeignKey(ca => ca.AssignedByUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+
+
             builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         }
     }

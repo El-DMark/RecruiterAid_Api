@@ -103,18 +103,24 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization(options =>
 {
     // Admins and Managers can assign candidates
+    // Existing policy
     options.AddPolicy("CanAssignCandidates", policy =>
-        policy.RequireRole("ADMIN", "MANAGER"));
+        policy.RequireRole("Admin", "Manager"));
+
+    // 🔒 New Admin-only policy
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Admin"));
+
 
     // Managers can only access their own team; Admins can access any
     options.AddPolicy("ManagerOwnTeam", policy =>
         policy.RequireAssertion(context =>
         {
             var user = context.User;
-            if (user.IsInRole("ADMIN"))
+            if (user.IsInRole("Admin"))
                 return true;
 
-            if (user.IsInRole("MANAGER"))
+            if (user.IsInRole("Manager"))
             {
                 var managerIdClaim = user.FindFirst("ManagerId")?.Value;
                 var routeManagerId = context.Resource as HttpContext

@@ -15,5 +15,7 @@ namespace RecruiterAid_Api.Presentation.DTOs
 
         // Optional: link to manager if this user is an Agent
         public string? ManagerId { get; set; }
+        public string DisplayName { get; set; } = null!;
+      
     }
 }

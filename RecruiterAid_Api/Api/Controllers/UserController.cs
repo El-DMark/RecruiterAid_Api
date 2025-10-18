@@ -40,7 +40,7 @@ namespace RecruiterAid_Api.Api.Controllers
 
         /// <summary>
         /// Get all agents reporting to a specific manager.
-        /// Only accessible to Admins and Managers.
+        /// Accessible to Admins and Managers.
         /// </summary>
         [Authorize(Policy = "CanAssignCandidates")] // Admins + Managers
         [HttpGet("{managerId}/agents")]
@@ -51,18 +51,15 @@ namespace RecruiterAid_Api.Api.Controllers
         }
 
         /// <summary>
-        /// Get a manager and their team of agents.
-        /// Only accessible to Admins and Managers.
+        /// Get all managers and their teams of agents.
+        /// Accessible to Admins only.
         /// </summary>
-        [Authorize(Policy = "CanAssignCandidates")] // Admins + Managers
-        [HttpGet("{managerId}/team")]
-        public async Task<ActionResult<ManagerTeamDto>> GetManagerTeam(string managerId)
+        [Authorize(Policy = "AdminOnly")]
+        [HttpGet("teams")]
+        public async Task<ActionResult<IEnumerable<ManagerTeamDto>>> GetAllManagerTeams()
         {
-            var team = await _userService.GetManagerTeamAsync(managerId);
-            if (team == null)
-                return NotFound();
-
-            return Ok(team);
+            var teams = await _userService.GetAllManagerTeamsAsync();
+            return Ok(teams);
         }
 
 
