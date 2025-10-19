@@ -51,17 +51,31 @@ namespace RecruiterAid_Api.Api.Controllers
         }
 
         /// <summary>
+        /// Get a specific manager and their team of agents.
+        /// Accessible to Admins only.
+        /// </summary>
+        [Authorize(Policy = "AdminOnly")] // 🔒 Admins only
+        [HttpGet("{managerId}/team")]
+        public async Task<ActionResult<ManagerTeamDto>> GetManagerTeam(string managerId)
+        {
+            var team = await _userService.GetManagerTeamAsync(managerId);
+            if (team == null)
+                return NotFound();
+
+            return Ok(team);
+        }
+
+        /// <summary>
         /// Get all managers and their teams of agents.
         /// Accessible to Admins only.
         /// </summary>
-        [Authorize(Policy = "AdminOnly")]
+        [Authorize(Policy = "AdminOnly")] // 🔒 Admins only
         [HttpGet("teams")]
         public async Task<ActionResult<IEnumerable<ManagerTeamDto>>> GetAllManagerTeams()
         {
             var teams = await _userService.GetAllManagerTeamsAsync();
             return Ok(teams);
         }
-
 
         /// <summary>
         /// Simple health check endpoint.

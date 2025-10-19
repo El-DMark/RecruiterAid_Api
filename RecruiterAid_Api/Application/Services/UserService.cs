@@ -4,7 +4,6 @@ using RecruiterAid_Api.Domain.Entities.Identity;
 using RecruiterAid_Api.Infrastructure.Data;
 using RecruiterAid_Api.Presentation.DTOs;
 using System.Collections.Generic;
-using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -14,7 +13,6 @@ namespace RecruiterAid_Api.Application.Services
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly ApplicationDbContext _dbContext;
-
 
         public UserService(UserManager<AppUser> userManager, ApplicationDbContext dbContext)
         {
@@ -61,7 +59,7 @@ namespace RecruiterAid_Api.Application.Services
         /// </summary>
         public async Task<IEnumerable<UserProfileDto>> GetAgentsForManagerAsync(string managerId)
         {
-            var agents = await _userManager.Users
+            var agents = await _dbContext.Users
                 .Where(u => u.ManagerId == managerId)
                 .ToListAsync();
 
@@ -81,6 +79,7 @@ namespace RecruiterAid_Api.Application.Services
 
             return result;
         }
+
 
         /// <summary>
         /// Get a user profile by email.
@@ -103,6 +102,9 @@ namespace RecruiterAid_Api.Application.Services
             };
         }
 
+        /// <summary>
+        /// Get a manager and their team of agents.
+        /// </summary>
         public async Task<ManagerTeamDto?> GetManagerTeamAsync(string managerId)
         {
             var manager = await _userManager.FindByIdAsync(managerId);
@@ -127,7 +129,10 @@ namespace RecruiterAid_Api.Application.Services
                 Agents = agents
             };
         }
-       
+
+        /// <summary>
+        /// Get all managers and their teams of agents.
+        /// </summary>
         public async Task<IEnumerable<ManagerTeamDto>> GetAllManagerTeamsAsync()
         {
             // 1. Get all users in Manager role
@@ -147,7 +152,7 @@ namespace RecruiterAid_Api.Application.Services
                     .Select(ca => new UserProfileDto
                     {
                         Id = ca.AgentUser.Id,
-                        DisplayName = ca.AgentUser.FullName,
+                        FullName = ca.AgentUser.FullName ?? ca.AgentUser.UserName ?? string.Empty,
                         Email = ca.AgentUser.Email
                     })
                     .Distinct()
@@ -158,7 +163,7 @@ namespace RecruiterAid_Api.Application.Services
                     Manager = new UserProfileDto
                     {
                         Id = manager.Id,
-                        DisplayName = manager.FullName,
+                        FullName = manager.FullName ?? manager.UserName ?? string.Empty,
                         Email = manager.Email
                     },
                     Agents = agents
@@ -167,6 +172,5 @@ namespace RecruiterAid_Api.Application.Services
 
             return result;
         }
-
     }
 }
