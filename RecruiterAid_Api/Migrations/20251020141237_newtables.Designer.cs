@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RecruiterAid_Api.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using RecruiterAid_Api.Infrastructure.Data;
 namespace RecruiterAid_Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251020141237_newtables")]
+    partial class newtables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,6 +24,44 @@ namespace RecruiterAid_Api.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("InterviewFeedback", b =>
+                {
+                    b.Property<long>("FeedbackId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("FeedbackId"));
+
+                    b.Property<string>("Comments")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("InterviewId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("InterviewerUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool?>("PassFail")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("Score")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.HasKey("FeedbackId");
+
+                    b.HasIndex("InterviewId");
+
+                    b.HasIndex("InterviewerUserId");
+
+                    b.ToTable("InterviewFeedback", (string)null);
+                });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
@@ -555,10 +596,12 @@ namespace RecruiterAid_Api.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("EmployerId"));
 
                     b.Property<string>("AddressLine1")
+                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("AddressLine2")
+                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
@@ -776,44 +819,6 @@ namespace RecruiterAid_Api.Migrations
                     b.ToTable("Interviews", (string)null);
                 });
 
-            modelBuilder.Entity("RecruiterAid_Api.Domain.Entities.Interviews.InterviewFeedback", b =>
-                {
-                    b.Property<long>("FeedbackId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("FeedbackId"));
-
-                    b.Property<string>("Comments")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<long>("InterviewId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("InterviewerUserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<bool?>("PassFail")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("Score")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("SubmittedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.HasKey("FeedbackId");
-
-                    b.HasIndex("InterviewId");
-
-                    b.HasIndex("InterviewerUserId");
-
-                    b.ToTable("InterviewFeedback", (string)null);
-                });
-
             modelBuilder.Entity("RecruiterAid_Api.Domain.Entities.JobPostings.JobPosting", b =>
                 {
                     b.Property<long>("JobId")
@@ -960,6 +965,25 @@ namespace RecruiterAid_Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Tags", (string)null);
+                });
+
+            modelBuilder.Entity("InterviewFeedback", b =>
+                {
+                    b.HasOne("RecruiterAid_Api.Domain.Entities.Interviews.Interview", "Interview")
+                        .WithMany("Feedbacks")
+                        .HasForeignKey("InterviewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RecruiterAid_Api.Domain.Entities.Identity.AppUser", "InterviewerUser")
+                        .WithMany()
+                        .HasForeignKey("InterviewerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Interview");
+
+                    b.Navigation("InterviewerUser");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -1162,25 +1186,6 @@ namespace RecruiterAid_Api.Migrations
                     b.Navigation("ScheduledByUser");
 
                     b.Navigation("WorkApplication");
-                });
-
-            modelBuilder.Entity("RecruiterAid_Api.Domain.Entities.Interviews.InterviewFeedback", b =>
-                {
-                    b.HasOne("RecruiterAid_Api.Domain.Entities.Interviews.Interview", "Interview")
-                        .WithMany("Feedbacks")
-                        .HasForeignKey("InterviewId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("RecruiterAid_Api.Domain.Entities.Identity.AppUser", "InterviewerUser")
-                        .WithMany()
-                        .HasForeignKey("InterviewerUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Interview");
-
-                    b.Navigation("InterviewerUser");
                 });
 
             modelBuilder.Entity("RecruiterAid_Api.Domain.Entities.JobPostings.JobPosting", b =>

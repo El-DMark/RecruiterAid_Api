@@ -19,10 +19,10 @@ namespace RecruiterAid_Api.Domain.Entities.Employers
         public string WebsiteUrl { get; set; }
 
         [MaxLength(255)]
-        public string AddressLine1 { get; set; }
+        public string? AddressLine1 { get; set; }
 
         [MaxLength(255)]
-        public string AddressLine2 { get; set; }
+        public string? AddressLine2 { get; set; }
 
         [MaxLength(100)]
         public string City { get; set; }

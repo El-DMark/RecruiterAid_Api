@@ -92,24 +92,23 @@ namespace RecruiterAid_Api.Infrastructure.Data
                 .WithOne(o => o.WorkApplication)
                 .HasForeignKey(o => o.WorkApplicationId);
 
-                builder.Entity<Interview>()
-        .HasOne(i => i.OrganizerUser)
-        .WithMany()
-        .HasForeignKey(i => i.OrganizerUserId)
-        .OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<Interview>()
+     .HasOne(i => i.OrganizerUser)
+     .WithMany()
+     .HasForeignKey(i => i.OrganizerUserId)
+     .OnDelete(DeleteBehavior.Restrict);
 
-                builder.Entity<Interview>()
-                    .HasOne(i => i.ScheduledByUser)
-                    .WithMany()
-                    .HasForeignKey(i => i.ScheduledByUserId)
-                    .OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<Interview>()
+                .HasOne(i => i.ScheduledByUser)
+                .WithMany()
+                .HasForeignKey(i => i.ScheduledByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<InterviewFeedback>()
- .HasOne(f => f.InterviewerUser)
- .WithMany()
- .HasForeignKey(f => f.InterviewerUserId)
- .OnDelete(DeleteBehavior.Restrict);
-
+                .HasOne(f => f.InterviewerUser)
+                .WithMany()
+                .HasForeignKey(f => f.InterviewerUserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
 
             // CandidateAgentAssignment explicit mapping

@@ -1,4 +1,6 @@
-﻿using RecruiterAid_Api.Presentation.DTOs;
+﻿using RecruiterAid_Api.Domain.Entities.JobPostings;
+using RecruiterAid_Api.Infrastructure.Data;
+using RecruiterAid_Api.Presentation.DTOs;
 
 namespace RecruiterAid_Api.Application.Services
 {
@@ -10,5 +12,6 @@ namespace RecruiterAid_Api.Application.Services
         Task<JobPostingDto> UpdateAsync(long id, CreateJobPostingDto dto);
         Task<bool> DeleteAsync(long id);
     }
-
+    
+    
 }

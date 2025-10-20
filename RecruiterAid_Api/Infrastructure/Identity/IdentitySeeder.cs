@@ -83,33 +83,76 @@ namespace RecruiterAid_Api.Infrastructure.Identity
                 {
                     Name = "Deshkar Advertising",
                     Industry = "Marketing",
+                    WebsiteUrl = "https://www.deshkaradvertising.test",
+                    AddressLine1 = "123 MG Road, Delhi",
+                    AddressLine2 = "Near Connaught Place",
+                    City = "New Delhi",
+                    State = "Delhi",
+                    Country = "India",
+                    ContactPerson = "Rajesh Kumar",
+                    ContactEmail = "contact@deshkaradvertising.test",
+                    ContactPhone = "+91-9876543210",
+
+                    // Finance / Tax
                     GSTNumber = "27ABCDE1234F1Z5",
                     PANNumber = "ABCDE1234F",
                     TANNumber = "TAN123456",
-                    BillingAddress = "123 MG Road, Delhi",
+                    BillingAddress = "123 MG Road, Delhi, India",
                     BankAccountNumber = "1234567890",
                     IFSCCode = "SBIN0001234",
                     PaymentTerms = "Net 30",
+
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
                     IsActive = true
                 };
+
                 dbContext.Employers.Add(employer);
                 await dbContext.SaveChangesAsync();
             }
+
 
             for (int i = 0; i < 8; i++)
             {
                 var job = new JobPosting
                 {
-                    JobId = 1000 + i,
                     EmployerId = employer.EmployerId,
-                    Title = $"Placeholder Job {i + 1}",
+                    Title = "Digital Marketing Specialist",
+                    Description = "Plan and execute digital marketing campaigns, including SEO/SEM, email, and social media.",
+                    Location = "Remote",
+                    EmploymentType = "Contract",
+                    MinExperienceYears = 2,
+                    MaxExperienceYears = 5,
+                    MinSalary = 40000,
+                    MaxSalary = 60000,
+                    Qualification = "MBA in Marketing or equivalent",
+                    PostedAt = DateTime.UtcNow,
+                    ClosingDate = DateTime.UtcNow.AddDays(45),
                     Status = "Open",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
+                employer.JobPostings.Add(new JobPosting
+                {
+                    Title = "Software Engineer",
+                    Description = "Develop, test, and maintain scalable web applications and backend services.",
+                    Location = "Bengaluru, India",
+                    EmploymentType = "Full-time",
+                    MinExperienceYears = 2,
+                    MaxExperienceYears = 5,
+                    MinSalary = 60000,
+                    MaxSalary = 90000,
+                    Qualification = "B.Tech in Computer Science or related field",
+                    PostedAt = DateTime.UtcNow,
+                    ClosingDate = DateTime.UtcNow.AddMonths(1),
+                    Status = "Open",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+
                 dbContext.JobPostings.Add(job);
+                await dbContext.SaveChangesAsync();
+
             }
             await dbContext.SaveChangesAsync();
             var defaultCandidates = new List<(string FirstName, string LastName, string Email, string Phone, string Position)>
@@ -152,18 +195,27 @@ namespace RecruiterAid_Api.Infrastructure.Identity
                     });
                     await dbContext.SaveChangesAsync();
 
+                    // Get a real job posting from the employer
+                    var jobPosting = employer.JobPostings
+                        .OrderBy(j => j.JobId)
+                        .Skip(agentIndex % employer.JobPostings.Count)
+                        .First();
+
+                    // Now create the application with a valid FK
                     var application = new WorkApplication
                     {
                         CandidateId = candidate.CandidateId,
-                        JobId = 1000 + agentIndex,
+                        JobId = jobPosting.JobId,   // ✅ real FK
                         AppliedAt = DateTime.UtcNow,
                         Status = "submitted",
                         CurrentStage = "Screening",
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
                     };
+
                     dbContext.WorkApplications.Add(application);
                     await dbContext.SaveChangesAsync();
+
 
                     dbContext.ApplicationStatuses.Add(new ApplicationStatus
                     {

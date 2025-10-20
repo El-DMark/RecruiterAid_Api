@@ -24,6 +24,7 @@ builder.Services.AddIdentity<AppUser, IdentityRole>()
 // Register application services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IJobPostingService, JobPostingService>();
 
 // Add controllers and Swagger
 builder.Services.AddControllers();
