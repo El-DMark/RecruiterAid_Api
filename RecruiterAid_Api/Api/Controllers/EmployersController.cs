@@ -27,6 +27,7 @@ namespace RecruiterAid_Api.Api.Controllers
         }
 
         [HttpPost]
+        [Route("create")]
         public async Task<ActionResult<EmployerDto>> Create(CreateEmployerDto dto)
         {
             var created = await _service.CreateAsync(dto);
