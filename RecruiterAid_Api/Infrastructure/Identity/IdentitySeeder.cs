@@ -6,6 +6,8 @@ using RecruiterAid_Api.Domain.Entities.Applications;
 using RecruiterAid_Api.Domain.Entities.Interviews;
 using RecruiterAid_Api.Domain.Entities.Offers;
 using RecruiterAid_Api.Infrastructure.Data;
+using RecruiterAid_Api.Domain.Entities.Employers;
+using RecruiterAid_Api.Domain.Entities.JobPostings;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -16,30 +18,101 @@ namespace RecruiterAid_Api.Infrastructure.Identity
     {
         private static readonly string[] Roles = { "Admin", "Manager", "Agent" };
 
-        private static readonly List<(string Email, string UserName, string FullName, string Password, string Role)> DefaultUsers =
-            new()
+        private static readonly List<(string Email, string UserName, string FullName, string Password, string Role)> DefaultUsers = new()
+        {
+            ("admin@recruiteraid.local", "admin", "System Admin", "Admin@12345", "Admin"),
+            ("manager1@recruiteraid.local", "manager1", "Manager One", "Manager@12345", "Manager"),
+            ("manager2@recruiteraid.local", "manager2", "Manager Two", "Manager@12345", "Manager"),
+            ("manager3@recruiteraid.local", "manager3", "Manager Three", "Manager@12345", "Manager"),
+            ("agent1@recruiteraid.local", "agent1", "Agent One", "Agent@12345", "Agent"),
+            ("agent2@recruiteraid.local", "agent2", "Agent Two", "Agent@12345", "Agent"),
+            ("agent3@recruiteraid.local", "agent3", "Agent Three", "Agent@12345", "Agent"),
+            ("agent4@recruiteraid.local", "agent4", "Agent Four", "Agent@12345", "Agent"),
+            ("agent5@recruiteraid.local", "agent5", "Agent Five", "Agent@12345", "Agent")
+        };
+
+        public static async Task SeedAsync(
+            UserManager<AppUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            ApplicationDbContext dbContext)
+        {
+            foreach (var role in Roles)
             {
-                ("admin@recruiteraid.local",   "admin",   "System Admin",    "Admin@12345",   "Admin"),
+                if (!await roleManager.RoleExistsAsync(role))
+                    await roleManager.CreateAsync(new IdentityRole(role));
+            }
 
-                // Managers
-                ("manager1@recruiteraid.local", "manager1", "Manager One", "Manager@12345", "Manager"),
-                ("manager2@recruiteraid.local", "manager2", "Manager Two", "Manager@12345", "Manager"),
-                ("manager3@recruiteraid.local", "manager3", "Manager Three", "Manager@12345", "Manager"),
+            var userLookup = new Dictionary<string, AppUser>();
+            foreach (var (email, userName, fullName, password, role) in DefaultUsers)
+            {
+                var user = await userManager.FindByEmailAsync(email);
+                if (user == null)
+                {
+                    user = new AppUser
+                    {
+                        UserName = userName,
+                        Email = email,
+                        FullName = fullName,
+                        EmailConfirmed = true
+                    };
+                    var result = await userManager.CreateAsync(user, password);
+                    if (result.Succeeded)
+                        await userManager.AddToRoleAsync(user, role);
+                }
+                userLookup[email] = user!;
+            }
+            var agents = new[]
+            {
+                    userLookup["agent1@recruiteraid.local"],
+                    userLookup["agent2@recruiteraid.local"],
+                    userLookup["agent3@recruiteraid.local"],
+                    userLookup["agent4@recruiteraid.local"],
+                    userLookup["agent5@recruiteraid.local"]
+                };
 
-                // Agents under Manager1
-                ("agent1@recruiteraid.local", "agent1", "Agent One", "Agent@12345", "Agent"),
-                ("agent2@recruiteraid.local", "agent2", "Agent Two", "Agent@12345", "Agent"),
 
-                // Agents under Manager2
-                ("agent3@recruiteraid.local", "agent3", "Agent Three", "Agent@12345", "Agent"),
-                ("agent4@recruiteraid.local", "agent4", "Agent Four", "Agent@12345", "Agent"),
+            foreach (var agent in new[] { "agent1@recruiteraid.local", "agent2@recruiteraid.local", "agent3@recruiteraid.local", "agent4@recruiteraid.local", "agent5@recruiteraid.local" })
+            {
+                await userManager.UpdateAsync(userLookup[agent]);
+            }
 
-                // Agents under Manager3
-                ("agent5@recruiteraid.local", "agent5", "Agent Five", "Agent@12345", "Agent")
-            };
+            var employer = await dbContext.Employers.FirstOrDefaultAsync(e => e.Name == "Deshkar Advertising");
+            if (employer == null)
+            {
+                employer = new Employer
+                {
+                    Name = "Deshkar Advertising",
+                    Industry = "Marketing",
+                    GSTNumber = "27ABCDE1234F1Z5",
+                    PANNumber = "ABCDE1234F",
+                    TANNumber = "TAN123456",
+                    BillingAddress = "123 MG Road, Delhi",
+                    BankAccountNumber = "1234567890",
+                    IFSCCode = "SBIN0001234",
+                    PaymentTerms = "Net 30",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    IsActive = true
+                };
+                dbContext.Employers.Add(employer);
+                await dbContext.SaveChangesAsync();
+            }
 
-        private static readonly List<(string FirstName, string LastName, string Email, string Phone, string Position)> DefaultCandidates =
-            new()
+            for (int i = 0; i < 8; i++)
+            {
+                var job = new JobPosting
+                {
+                    JobId = 1000 + i,
+                    EmployerId = employer.EmployerId,
+                    Title = $"Placeholder Job {i + 1}",
+                    Status = "Open",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                dbContext.JobPostings.Add(job);
+            }
+            await dbContext.SaveChangesAsync();
+            var defaultCandidates = new List<(string FirstName, string LastName, string Email, string Phone, string Position)>
             {
                 ("Alice", "Johnson", "alice.johnson@test.local", "555-1001", "Software Engineer"),
                 ("Bob", "Smith", "bob.smith@test.local", "555-1002", "Data Analyst"),
@@ -51,69 +124,8 @@ namespace RecruiterAid_Api.Infrastructure.Identity
                 ("Hannah", "Lee", "hannah.lee@test.local", "555-1008", "Frontend Developer")
             };
 
-        public static async Task SeedAsync(
-            UserManager<AppUser> userManager,
-            RoleManager<IdentityRole> roleManager,
-            ApplicationDbContext dbContext)
-        {
-            // Ensure roles exist
-            foreach (var role in Roles)
-            {
-                if (!await roleManager.RoleExistsAsync(role))
-                {
-                    await roleManager.CreateAsync(new IdentityRole(role));
-                }
-            }
-
-            var userLookup = new Dictionary<string, AppUser>();
-
-            // Ensure default users exist
-            foreach (var (email, userName, fullName, password, role) in DefaultUsers)
-            {
-                var existingUser = await userManager.FindByEmailAsync(email);
-                if (existingUser == null)
-                {
-                    var user = new AppUser
-                    {
-                        UserName = userName,
-                        Email = email,
-                        FullName = fullName,
-                        EmailConfirmed = true
-                    };
-
-                    var result = await userManager.CreateAsync(user, password);
-                    if (result.Succeeded)
-                    {
-                        await userManager.AddToRoleAsync(user, role);
-                        existingUser = user;
-                    }
-                }
-                userLookup[email] = existingUser!;
-            }
-
-            // Wire Agents -> Managers
-            userLookup["agent1@recruiteraid.local"].ManagerId = userLookup["manager1@recruiteraid.local"].Id;
-            userLookup["agent2@recruiteraid.local"].ManagerId = userLookup["manager1@recruiteraid.local"].Id;
-            userLookup["agent3@recruiteraid.local"].ManagerId = userLookup["manager2@recruiteraid.local"].Id;
-            userLookup["agent4@recruiteraid.local"].ManagerId = userLookup["manager2@recruiteraid.local"].Id;
-            userLookup["agent5@recruiteraid.local"].ManagerId = userLookup["manager3@recruiteraid.local"].Id;
-
-            foreach (var agent in new[] { "agent1@recruiteraid.local", "agent2@recruiteraid.local", "agent3@recruiteraid.local", "agent4@recruiteraid.local", "agent5@recruiteraid.local" })
-            {
-                await userManager.UpdateAsync(userLookup[agent]);
-            }
-
-            // ✅ Seed candidates and distribute across agents
-            var agents = new[]
-            {
-                userLookup["agent1@recruiteraid.local"],
-                userLookup["agent2@recruiteraid.local"],
-                userLookup["agent3@recruiteraid.local"],
-                userLookup["agent4@recruiteraid.local"],
-                userLookup["agent5@recruiteraid.local"]
-            };
             int agentIndex = 0;
-            foreach (var (firstName, lastName, email, phone, position) in DefaultCandidates)
+            foreach (var (firstName, lastName, email, phone, position) in defaultCandidates)
             {
                 var candidate = await dbContext.Candidates.FirstOrDefaultAsync(c => c.Email == email);
                 if (candidate == null)
@@ -129,9 +141,8 @@ namespace RecruiterAid_Api.Infrastructure.Identity
                         IsActive = true
                     };
                     dbContext.Candidates.Add(candidate);
-                    await dbContext.SaveChangesAsync(); // CandidateId auto-populated
+                    await dbContext.SaveChangesAsync();
 
-                    // Assign to agent in round-robin
                     var assignedAgent = agents[agentIndex % agents.Length];
                     dbContext.CandidateAgentAssignments.Add(new CandidateAgentAssignment
                     {
@@ -141,7 +152,6 @@ namespace RecruiterAid_Api.Infrastructure.Identity
                     });
                     await dbContext.SaveChangesAsync();
 
-                    // Create WorkApplication
                     var application = new WorkApplication
                     {
                         CandidateId = candidate.CandidateId,
@@ -153,9 +163,8 @@ namespace RecruiterAid_Api.Infrastructure.Identity
                         UpdatedAt = DateTime.UtcNow
                     };
                     dbContext.WorkApplications.Add(application);
-                    await dbContext.SaveChangesAsync(); // ApplicationId populated
+                    await dbContext.SaveChangesAsync();
 
-                    // Add initial status
                     dbContext.ApplicationStatuses.Add(new ApplicationStatus
                     {
                         WorkApplicationId = application.WorkApplicationId,
@@ -166,7 +175,6 @@ namespace RecruiterAid_Api.Infrastructure.Identity
                     });
                     await dbContext.SaveChangesAsync();
 
-                    // Schedule Interview
                     var interview = new Interview
                     {
                         WorkApplicationId = application.WorkApplicationId,
@@ -174,17 +182,17 @@ namespace RecruiterAid_Api.Infrastructure.Identity
                         StartTime = DateTime.UtcNow.AddDays(2),
                         EndTime = DateTime.UtcNow.AddDays(2).AddHours(1),
                         Location = "Zoom",
-                        OrganizerUserId = 1,
-                        ScheduledByUserId = 1,
+                        OrganizerUserId = assignedAgent.Id,         // ✅ string
+                        ScheduledByUserId = assignedAgent.Id,       // ✅ string
                         CreatedAt = DateTime.UtcNow
                     };
                     dbContext.Interviews.Add(interview);
                     await dbContext.SaveChangesAsync();
-                    // Add Interview Feedback
+
                     dbContext.InterviewFeedbacks.Add(new InterviewFeedback
                     {
                         InterviewId = interview.InterviewId,
-                        InterviewerUserId = 1,
+                        InterviewerUserId = assignedAgent.Id,       // ✅ string
                         Score = 4,
                         PassFail = true,
                         Comments = "Candidate performed well in technical screening.",
@@ -192,7 +200,7 @@ namespace RecruiterAid_Api.Infrastructure.Identity
                     });
                     await dbContext.SaveChangesAsync();
 
-                    // Create Offer
+
                     dbContext.Offers.Add(new Offer
                     {
                         WorkApplicationId = application.WorkApplicationId,

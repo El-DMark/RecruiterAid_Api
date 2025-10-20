@@ -1,15 +1,18 @@
-﻿namespace RecruiterAid_Api.Domain.Entities.Interviews
-{
-    public class InterviewFeedback
-    {
-        public long FeedbackId { get; set; }
-        public long InterviewId { get; set; }
-        public long InterviewerUserId { get; set; }
-        public int? Score { get; set; }
-        public bool? PassFail { get; set; }
-        public string? Comments { get; set; }
-        public DateTime SubmittedAt { get; set; }
+﻿using RecruiterAid_Api.Domain.Entities.Identity;
+using RecruiterAid_Api.Domain.Entities.Interviews;
 
-        public Interview Interview { get; set; } = null!;
-    }
+public class InterviewFeedback
+{
+    public long FeedbackId { get; set; }
+    public long InterviewId { get; set; }
+
+    public string InterviewerUserId { get; set; } = null!;
+    public AppUser InterviewerUser { get; set; } = null!;
+
+    public int? Score { get; set; }
+    public bool? PassFail { get; set; }
+    public string? Comments { get; set; }
+    public DateTime SubmittedAt { get; set; }
+
+    public Interview Interview { get; set; } = null!;
 }

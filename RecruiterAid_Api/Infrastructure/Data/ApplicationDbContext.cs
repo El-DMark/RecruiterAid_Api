@@ -7,6 +7,8 @@ using RecruiterAid_Api.Domain.Entities.Interviews;
 using RecruiterAid_Api.Domain.Entities.Offers;
 using RecruiterAid_Api.Domain.Entities.Tags;
 using RecruiterAid_Api.Domain.Entities.Identity;
+using RecruiterAid_Api.Domain.Entities.Employers;
+using RecruiterAid_Api.Domain.Entities.JobPostings;
 using System.Reflection;
 using RecruiterAid_Api.Domain.Entities;
 
@@ -24,7 +26,7 @@ namespace RecruiterAid_Api.Infrastructure.Data
         public DbSet<CandidateAuditLog> CandidateAuditLogs { get; set; }
         public DbSet<CandidateAgentAssignment> CandidateAgentAssignments { get; set; }
 
-        // Applications (renamed to WorkApplication)
+        // Applications
         public DbSet<WorkApplication> WorkApplications { get; set; }
         public DbSet<ApplicationStatus> ApplicationStatuses { get; set; }
         public DbSet<ApplicationDocument> ApplicationDocuments { get; set; }
@@ -38,6 +40,10 @@ namespace RecruiterAid_Api.Infrastructure.Data
 
         // Tags
         public DbSet<Tag> Tags { get; set; }
+
+        // Employers & Job Postings
+        public DbSet<Employer> Employers { get; set; }
+        public DbSet<JobPosting> JobPostings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -56,38 +62,57 @@ namespace RecruiterAid_Api.Infrastructure.Data
             builder.Entity<CandidateTag>()
                 .HasKey(ct => new { ct.CandidateId, ct.TagId });
 
-            // Relationships
+            // Candidate → Applications
             builder.Entity<Candidate>()
                 .HasMany(c => c.Applications)
                 .WithOne(a => a.Candidate)
                 .HasForeignKey(a => a.CandidateId);
 
+            // WorkApplication → StatusHistory
             builder.Entity<WorkApplication>()
                 .HasMany(a => a.StatusHistory)
                 .WithOne(s => s.WorkApplication)
                 .HasForeignKey(s => s.WorkApplicationId);
 
+            // WorkApplication → Documents
             builder.Entity<WorkApplication>()
                 .HasMany(a => a.Documents)
                 .WithOne(d => d.WorkApplication)
                 .HasForeignKey(d => d.WorkApplicationId);
 
+            // WorkApplication → Interviews
             builder.Entity<WorkApplication>()
                 .HasMany(a => a.Interviews)
                 .WithOne(i => i.WorkApplication)
                 .HasForeignKey(i => i.WorkApplicationId);
 
+            // WorkApplication → Offers
             builder.Entity<WorkApplication>()
                 .HasMany(a => a.Offers)
                 .WithOne(o => o.WorkApplication)
                 .HasForeignKey(o => o.WorkApplicationId);
 
-            builder.Entity<Interview>()
-                .HasMany(i => i.Feedbacks)
-                .WithOne(f => f.Interview)
-                .HasForeignKey(f => f.InterviewId);
+                builder.Entity<Interview>()
+        .HasOne(i => i.OrganizerUser)
+        .WithMany()
+        .HasForeignKey(i => i.OrganizerUserId)
+        .OnDelete(DeleteBehavior.Restrict);
 
-            // ✅ Explicit mapping for CandidateAgentAssignment
+                builder.Entity<Interview>()
+                    .HasOne(i => i.ScheduledByUser)
+                    .WithMany()
+                    .HasForeignKey(i => i.ScheduledByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<InterviewFeedback>()
+ .HasOne(f => f.InterviewerUser)
+ .WithMany()
+ .HasForeignKey(f => f.InterviewerUserId)
+ .OnDelete(DeleteBehavior.Restrict);
+
+
+
+            // CandidateAgentAssignment explicit mapping
             builder.Entity<CandidateAgentAssignment>(entity =>
             {
                 entity.HasKey(ca => ca.CandidateAgentAssignmentId);
@@ -107,6 +132,22 @@ namespace RecruiterAid_Api.Infrastructure.Data
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
+            // Employer → JobPostings
+            builder.Entity<Employer>()
+                .HasMany(e => e.JobPostings)
+                .WithOne(j => j.Employer)
+                .HasForeignKey(j => j.EmployerId)
+                .OnDelete(DeleteBehavior.Cascade); // Optional: cascade delete
+
+            // JobPosting → WorkApplications
+            builder.Entity<JobPosting>()
+                .HasKey(j => j.JobId);
+
+            builder.Entity<JobPosting>()
+                .HasMany(j => j.Applications)
+                .WithOne(a => a.JobPosting)
+                .HasForeignKey(a => a.JobId)
+                .OnDelete(DeleteBehavior.Cascade); // Optional: cascade delete
 
 
             builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
