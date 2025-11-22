@@ -17,7 +17,7 @@ namespace RecruiterAid_Api.Infrastructure.Configurations.Interviews
                    .HasMaxLength(50);
 
             builder.Property(i => i.CreatedAt)
-                   .HasDefaultValueSql("GETDATE()");
+                   .HasDefaultValueSql("NOW()");
 
             builder.HasOne(i => i.WorkApplication)
                    .WithMany(a => a.Interviews)

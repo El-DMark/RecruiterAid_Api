@@ -16,9 +16,9 @@ namespace RecruiterAid_Api.Infrastructure.Configurations.Applications
                    .HasMaxLength(50)
                    .HasDefaultValue("submitted");
 
-            builder.Property(a => a.AppliedAt).HasDefaultValueSql("GETDATE()");
-            builder.Property(a => a.CreatedAt).HasDefaultValueSql("GETDATE()");
-            builder.Property(a => a.UpdatedAt).HasDefaultValueSql("GETDATE()");
+            builder.Property(a => a.AppliedAt).HasDefaultValueSql("NOW()");
+            builder.Property(a => a.CreatedAt).HasDefaultValueSql("NOW()");
+            builder.Property(a => a.UpdatedAt).HasDefaultValueSql("NOW()");
 
             builder.HasOne(a => a.Candidate)
                    .WithMany(c => c.Applications)

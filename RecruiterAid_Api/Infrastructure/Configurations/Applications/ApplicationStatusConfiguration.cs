@@ -13,7 +13,7 @@ namespace RecruiterAid_Api.Infrastructure.Configurations.Applications
             builder.HasKey(s => s.StatusId);
 
             builder.Property(s => s.NewStatus).IsRequired().HasMaxLength(50);
-            builder.Property(s => s.ChangedAt).HasDefaultValueSql("GETDATE()");
+            builder.Property(s => s.ChangedAt).HasDefaultValueSql("NOW()");
 
             builder.HasOne(s => s.WorkApplication)
                    .WithMany(a => a.StatusHistory)

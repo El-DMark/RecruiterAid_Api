@@ -17,8 +17,8 @@ namespace RecruiterAid_Api.Infrastructure.Configurations.Candidates
             builder.Property(c => c.Email).IsRequired().HasMaxLength(255);
             builder.HasIndex(c => c.Email).IsUnique();
 
-            builder.Property(c => c.CreatedAt).HasDefaultValueSql("GETDATE()");
-            builder.Property(c => c.UpdatedAt).HasDefaultValueSql("GETDATE()");
+            builder.Property(c => c.CreatedAt).HasDefaultValueSql("NOW()");
+            builder.Property(c => c.UpdatedAt).HasDefaultValueSql("NOW()");
             builder.Property(c => c.IsActive).HasDefaultValue(true);
         }
     }

@@ -24,10 +24,10 @@ namespace RecruiterAid_Api.Infrastructure.Configurations.Offers
                    .HasColumnType("decimal(12,2)");
 
             builder.Property(o => o.CreatedAt)
-                   .HasDefaultValueSql("GETDATE()");
+                   .HasDefaultValueSql("NOW()");
 
             builder.Property(o => o.UpdatedAt)
-                   .HasDefaultValueSql("GETDATE()");
+                   .HasDefaultValueSql("NOW()");
 
             builder.HasOne(o => o.WorkApplication)
                    .WithMany(a => a.Offers)

@@ -14,7 +14,7 @@ namespace RecruiterAid_Api.Infrastructure.Configurations.Candidates
             builder.HasKey(a => a.AuditId);
 
             builder.Property(a => a.EventTimestamp)
-                   .HasDefaultValueSql("GETDATE()");
+                   .HasDefaultValueSql("NOW()");
 
             builder.HasOne(a => a.Candidate)
                    .WithMany(c => c.AuditLogs)

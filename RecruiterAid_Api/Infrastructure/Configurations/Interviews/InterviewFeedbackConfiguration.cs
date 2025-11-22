@@ -13,7 +13,7 @@ namespace RecruiterAid_Api.Infrastructure.Configurations.Interviews
 
             builder.HasKey(f => f.FeedbackId);
 
-            builder.Property(f => f.SubmittedAt).HasDefaultValueSql("GETDATE()");
+            builder.Property(f => f.SubmittedAt).HasDefaultValueSql("NOW()");
 
             builder.HasOne(f => f.Interview)
                    .WithMany(i => i.Feedbacks)

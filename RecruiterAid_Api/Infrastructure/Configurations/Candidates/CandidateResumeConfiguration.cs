@@ -16,8 +16,8 @@ namespace RecruiterAid_Api.Infrastructure.Configurations.Candidates
             builder.Property(r => r.DocumentType).HasMaxLength(50);
             builder.Property(r => r.FileUrl).IsRequired().HasMaxLength(500);
 
-            builder.Property(r => r.UploadedAt).HasDefaultValueSql("GETDATE()");
-            builder.Property(r => r.UpdatedAt).HasDefaultValueSql("GETDATE()");
+            builder.Property(r => r.UploadedAt).HasDefaultValueSql("NOW()");
+            builder.Property(r => r.UpdatedAt).HasDefaultValueSql("NOW()");
             builder.Property(r => r.IsActive).HasDefaultValue(true);
             builder.Property(r => r.IsPrimary).HasDefaultValue(false);
 

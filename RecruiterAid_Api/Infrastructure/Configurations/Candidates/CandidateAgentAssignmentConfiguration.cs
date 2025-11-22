@@ -13,7 +13,7 @@ namespace RecruiterAid_Api.Infrastructure.Configurations.Candidates
             builder.HasKey(ca => ca.CandidateAgentAssignmentId);
 
             builder.Property(ca => ca.AssignedAt)
-                   .HasDefaultValueSql("GETDATE()");
+                   .HasDefaultValueSql("NOW()");
 
             builder.HasOne(ca => ca.Candidate)
                    .WithMany(c => c.AgentAssignments)

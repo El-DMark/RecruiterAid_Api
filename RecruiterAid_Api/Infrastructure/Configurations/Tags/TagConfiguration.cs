@@ -21,7 +21,7 @@ namespace RecruiterAid_Api.Infrastructure.Configurations.Tags
                    .IsUnique();
 
             builder.Property(t => t.Description)
-                   .HasColumnType("nvarchar(max)");
+                   .HasColumnType("text");
         }
     }
 }

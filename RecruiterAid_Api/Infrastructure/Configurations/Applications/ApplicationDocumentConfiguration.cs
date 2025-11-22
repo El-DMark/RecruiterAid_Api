@@ -20,7 +20,7 @@ namespace RecruiterAid_Api.Infrastructure.Configurations.Applications
                    .HasMaxLength(500);
 
             builder.Property(d => d.UploadedAt)
-                   .HasDefaultValueSql("GETDATE()");
+                   .HasDefaultValueSql("NOW()");
 
             builder.HasOne(d => d.WorkApplication)
                    .WithMany(a => a.Documents)
