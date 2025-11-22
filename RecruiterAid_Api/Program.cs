@@ -20,6 +20,9 @@ var connectionString =
     builder.Configuration.GetConnectionString("PostgresConnection")
     ?? Environment.GetEnvironmentVariable("PostgresConnection");
 
+// TEMP: log the connection string to confirm it's not localhost
+Console.WriteLine($"🔎 Using Postgres connection string: {connectionString}");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
