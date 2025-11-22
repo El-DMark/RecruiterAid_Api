@@ -12,12 +12,15 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ✅ Bind to Render's PORT (default 10000)
+var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 // Configure EF Core with PostgreSQL
 var connectionString =
     builder.Configuration.GetConnectionString("PostgresConnection")
     ?? Environment.GetEnvironmentVariable("PostgresConnection");
 
-// TEMP: log the connection string to confirm it's not localhost
 Console.WriteLine($"🔎 Using Postgres connection string: {connectionString}");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -39,7 +42,6 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    // Enable JWT authentication in Swagger
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -91,8 +93,8 @@ builder.Services.AddAuthentication(options =>
         OnTokenValidated = context =>
         {
             var identity = context.Principal.Identity as ClaimsIdentity;
-
             var customClaim = identity?.FindFirst(ClaimTypes.NameIdentifier);
+
             if (customClaim != null)
             {
                 identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, customClaim.Value));
@@ -158,12 +160,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Middleware pipeline
-app.UseHttpsRedirection();
+// ❌ Remove HTTPS redirection for Render (proxy handles HTTPS)
+// app.UseHttpsRedirection();
+
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// ✅ Add a simple health endpoint for Render checks
+app.MapGet("/health", () => Results.Ok("Healthy"));
 
 // ✅ Apply migrations and seed roles/users on startup
 using (var scope = app.Services.CreateScope())
