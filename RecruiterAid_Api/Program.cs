@@ -16,8 +16,13 @@ var builder = WebApplication.CreateBuilder(args);
 //builder.Services.AddDbContext<ApplicationDbContext>(options =>
 //    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+var connectionString =
+    builder.Configuration.GetConnectionString("PostgresConnection")
+    ?? Environment.GetEnvironmentVariable("PostgresConnection");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection")));
+    options.UseNpgsql(connectionString));
+
 
 
 // Configure Identity with AppUser
