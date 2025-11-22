@@ -12,10 +12,7 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure EF Core with SQL Server
-//builder.Services.AddDbContext<ApplicationDbContext>(options =>
-//    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+// Configure EF Core with PostgreSQL
 var connectionString =
     builder.Configuration.GetConnectionString("PostgresConnection")
     ?? Environment.GetEnvironmentVariable("PostgresConnection");
@@ -25,8 +22,6 @@ Console.WriteLine($"🔎 Using Postgres connection string: {connectionString}");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
-
-
 
 // Configure Identity with AppUser
 builder.Services.AddIdentity<AppUser, IdentityRole>()
@@ -116,17 +111,12 @@ builder.Services.AddAuthentication(options =>
 // ✅ Add Authorization Policies
 builder.Services.AddAuthorization(options =>
 {
-    // Admins and Managers can assign candidates
-    // Existing policy
     options.AddPolicy("CanAssignCandidates", policy =>
         policy.RequireRole("Admin", "Manager"));
 
-    // 🔒 New Admin-only policy
     options.AddPolicy("AdminOnly", policy =>
         policy.RequireRole("Admin"));
 
-
-    // Managers can only access their own team; Admins can access any
     options.AddPolicy("ManagerOwnTeam", policy =>
         policy.RequireAssertion(context =>
         {
@@ -175,16 +165,26 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Seed roles and default users on startup
+// ✅ Apply migrations and seed roles/users on startup
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-    var userManager = services.GetRequiredService<UserManager<AppUser>>();
-    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
     var dbContext = services.GetRequiredService<ApplicationDbContext>();
 
+    try
+    {
+        Console.WriteLine("📦 Applying migrations...");
+        dbContext.Database.Migrate();
+        Console.WriteLine("✅ Migrations applied successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"⚠️ Migration failed: {ex.Message}");
+    }
+
+    var userManager = services.GetRequiredService<UserManager<AppUser>>();
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
     await IdentitySeeder.SeedAsync(userManager, roleManager, dbContext);
 }
-
 
 app.Run();
